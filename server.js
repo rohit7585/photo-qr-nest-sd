@@ -1,4 +1,4 @@
-'use strict';
+D'use strict';
 const express = require('express');
 const helmet = require('helmet');
 const multer = require('multer');
@@ -12,7 +12,7 @@ const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const BASE_URL = (process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/$/, '');
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'uploads');
-const PUBLIC_DIR = path.join(__dirname, 'public');
+const PUBLIC_DIR = __dirname;
 const TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_BYTES = 5 * 1024 * 1024;
 fs.mkdirSync(DATA_DIR, { recursive: true });
