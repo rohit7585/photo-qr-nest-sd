@@ -21,6 +21,7 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 app.disable('x-powered-by');
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-origin' } }));
 app.use(express.static(PUBLIC_DIR, { etag: true, maxAge: '1h' }));
+app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false }));
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_BYTES, files: 1 }, fileFilter: (_req, file, cb) => {
   const allowed = new Set(['image/jpeg', 'image/png', 'image/webp']);
