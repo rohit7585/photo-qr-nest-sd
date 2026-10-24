@@ -137,7 +137,7 @@ app.post('/api/upload', upload.single('photo'), async (req, res, next) => {
     );
 
     const origin = BASE_URL || `${req.protocol}://${req.get('host')}`;
-
+     Aapp.get('/photo/:id'
     res.status(201).json({
       url: `${origin}/photo/${id}`,
       expiresInHours: 24,
@@ -175,12 +175,63 @@ app.get('/photo/:id', async (req, res) => {
     return res.status(404).send('Photo not found or expired.');
   }
 
+  const imageUrl = '/photo-file/' + req.params.id;
+
+  res.set('Cache-Control', 'no-store');
+  res.type('html').send(`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo QR NEST SD</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:12px;background:#f5f7fb;font-family:Arial,sans-serif;text-align:center}
+.photo{display:block;width:100%;height:auto;max-height:82vh;object-fit:contain;margin:auto;background:white}
+.brand{font-size:14px;font-weight:700;color:#2446a8;margin-top:9px}
+.address{font-size:11px;color:#687386;margin-top:3px;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<img class="photo" src="${imageUrl}" alt="Shared photo">
+<div class="brand">Photo QR NEST SD</div>
+<div class="address">photo-qr-nest-sd.onrender.com</div>
+</body>
+</html>`);
+});
+
+app.get('/photo-file/:id', async (req, res) => {
+  if (!/^[a-f0-9]{32}$/.test(req.params.id)) {
+    return res.status(404).send('Photo not found or expired.');
+  }
+
+  let found = null;
+
+  for (const ext of ['.jpg', '.png', '.webp']) {
+    const p = path.join(DATA_DIR, req.params.id + ext);
+
+    try {
+      const st = await fs.promises.stat(p);
+
+      if (Date.now() - st.mtimeMs > TTL_MS) {
+        await fs.promises.unlink(p).catch(() => {});
+        return res.status(404).send('Photo expired.');
+      }
+
+      found = { p, ext };
+      break;
+    } catch (_) {}
+  }
+
+  if (!found) {
+    return res.status(404).send('Photo not found or expired.');
+  }
+
   res.set('Cache-Control', 'public, max-age=300');
   res.set('X-Content-Type-Options', 'nosniff');
   res.type(found.ext === '.png' ? 'png' : found.ext === '.webp' ? 'webp' : 'jpg');
   res.sendFile(found.p);
 });
-
 app.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ error: 'Image exceeds the 5 MB limit.' });
