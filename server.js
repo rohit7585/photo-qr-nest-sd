@@ -1,4 +1,12 @@
-'use strict';
+'
+app.use('/api/', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skip: (req) => req.path === '/health'
+}));
+use strict';
 const express = require('express');
 const helmet = require('helmet');
 const multer = require('multer');
