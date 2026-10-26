@@ -3,5 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /photo/
 Disallow: /photo-file/
-
 Sitemap: https://photo-qr-nest-sd.onrender.com/sitemap.xml
