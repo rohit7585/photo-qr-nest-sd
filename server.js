@@ -40,6 +40,16 @@ app.use(helmet({
     }
   }
 }));
+app.get('/robots.txt', (_req, res) => {
+  res.type('text/plain').send(
+    'User-agent: *\n' +
+    'Allow: /\n' +
+    'Disallow: /api/\n' +
+    'Disallow: /photo/\n' +
+    'Disallow: /photo-file/\n\n' +
+    'Sitemap: https://photo-qr-nest-sd.onrender.com/sitemap.xml\n'
+  );
+});
 
 app.use(express.static(PUBLIC_DIR, { etag: true, maxAge: '1h' }));
 app.get('/', (_req, res) =>
