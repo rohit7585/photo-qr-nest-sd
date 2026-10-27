@@ -1,4 +1,3 @@
-
 'use strict';
 
 const express = require('express');
@@ -12,14 +11,19 @@ const crypto = require('crypto');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
-const BASE_URL = (process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/$/, '');
+const BASE_URL = (
+  process.env.PUBLIC_BASE_URL ||
+  process.env.RENDER_EXTERNAL_URL ||
+  'https://photo-qr-nest-sd.onrender.com'
+).replace(/\/$/, '');
+
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'uploads');
 const PUBLIC_DIR = __dirname;
 const TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_BYTES = 5 * 1024 * 1024;
+const SITE_URL = 'https://photo-qr-nest-sd.onrender.com';
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
-
 app.disable('x-powered-by');
 
 app.use(helmet({
@@ -40,21 +44,50 @@ app.use(helmet({
     }
   }
 }));
+
+// Robots.txt
 app.get('/robots.txt', (_req, res) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'X-Content-Type-Options': 'nosniff'
+  });
+
   res.type('text/plain').send(
     'User-agent: *\n' +
     'Allow: /\n' +
+    'Allow: /sitemap.xml\n' +
     'Disallow: /api/\n' +
     'Disallow: /photo/\n' +
     'Disallow: /photo-file/\n\n' +
-    'Sitemap: https://photo-qr-nest-sd.onrender.com/sitemap.xml\n'
+    `Sitemap: ${SITE_URL}/sitemap.xml\n`
   );
 });
 
-app.use(express.static(PUBLIC_DIR, { etag: true, maxAge: '1h' }));
-app.get('/', (_req, res) =>
-  res.sendFile(path.join(__dirname, 'index.html'))
-);
+// Sitemap XML
+app.get('/sitemap.xml', (_req, res) => {
+  res.set({
+    'Cache-Control': 'no-cache, must-revalidate',
+    'X-Content-Type-Options': 'nosniff'
+  });
+
+  res.type('application/xml').send(
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    `  <url><loc>${SITE_URL}/</loc></url>\n` +
+    '</urlset>\n'
+  );
+});
+
+app.use(express.static(PUBLIC_DIR, {
+  etag: true,
+  maxAge: '1h'
+}));
+
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 app.use('/api/', rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -66,11 +99,17 @@ app.use('/api/', rateLimit({
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_BYTES, files: 1 },
+  limits: {
+    fileSize: MAX_BYTES,
+    files: 1
+  },
   fileFilter: (_req, file, cb) => {
     const allowed = new Set([
-      'image/jpeg', 'image/png', 'image/webp'
+      'image/jpeg',
+      'image/png',
+      'image/webp'
     ]);
+
     cb(
       allowed.has(file.mimetype)
         ? null
@@ -81,8 +120,11 @@ const upload = multer({
 });
 
 function safeExt(format) {
-  return format === 'png' ? '.png'
-    : format === 'webp' ? '.webp' : '.jpg';
+  return format === 'png'
+    ? '.png'
+    : format === 'webp'
+      ? '.webp'
+      : '.jpg';
 }
 
 async function cleanupExpired() {
@@ -90,11 +132,15 @@ async function cleanupExpired() {
   const names = await fs.promises.readdir(DATA_DIR).catch(() => []);
 
   for (const name of names) {
-    if (!/^[a-f0-9]{32}\.(jpg|png|webp)$/.test(name)) continue;
+    if (!/^[a-f0-9]{32}\.(jpg|png|webp)$/.test(name)) {
+      continue;
+    }
 
     const file = path.join(DATA_DIR, name);
+
     try {
       const st = await fs.promises.stat(file);
+
       if (now - st.mtimeMs > TTL_MS) {
         await fs.promises.unlink(file);
       }
@@ -105,6 +151,7 @@ async function cleanupExpired() {
 setInterval(cleanupExpired, 10 * 60 * 1000).unref();
 cleanupExpired();
 
+// API health check
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
@@ -113,6 +160,7 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+// Upload and process photo
 app.post('/api/upload', upload.single('photo'), async (req, res, next) => {
   try {
     if (!req.file) {
@@ -122,6 +170,7 @@ app.post('/api/upload', upload.single('photo'), async (req, res, next) => {
     }
 
     const id = crypto.randomBytes(16).toString('hex');
+
     const image = sharp(req.file.buffer, {
       limitInputPixels: 25000000,
       failOn: 'error'
@@ -133,10 +182,14 @@ app.post('/api/upload', upload.single('photo'), async (req, res, next) => {
 
     if (meta.format === 'png') {
       format = 'png';
-      output = await image.png({ compressionLevel: 8 }).toBuffer();
+      output = await image.png({
+        compressionLevel: 8
+      }).toBuffer();
     } else if (meta.format === 'webp') {
       format = 'webp';
-      output = await image.webp({ quality: 88 }).toBuffer();
+      output = await image.webp({
+        quality: 88
+      }).toBuffer();
     } else if (meta.format === 'jpeg') {
       format = 'jpeg';
       output = await image.jpeg({
@@ -154,7 +207,10 @@ app.post('/api/upload', upload.single('photo'), async (req, res, next) => {
     await fs.promises.writeFile(
       path.join(DATA_DIR, filename),
       output,
-      { flag: 'wx', mode: 0o600 }
+      {
+        flag: 'wx',
+        mode: 0o600
+      }
     );
 
     const origin = BASE_URL || `${req.protocol}://${req.get('host')}`;
@@ -169,7 +225,7 @@ app.post('/api/upload', upload.single('photo'), async (req, res, next) => {
   }
 });
 
-// QR scan opens a photo page with a small website footer.
+// QR scan opens a photo page
 app.get('/photo/:id', async (req, res) => {
   if (!/^[a-f0-9]{32}$/.test(req.params.id)) {
     return res.status(404).send('Photo not found or expired.');
@@ -199,6 +255,7 @@ app.get('/photo/:id', async (req, res) => {
   }
 
   res.set('Cache-Control', 'no-store');
+
   res.type('html').send(`<!doctype html>
 <html lang="en">
 <head>
@@ -224,7 +281,7 @@ body{margin:0;padding:12px;background:#f5f7fb;font-family:Arial,sans-serif;text-
 </html>`);
 });
 
-// Serves the actual image inside the photo page.
+// Serve the actual uploaded image
 app.get('/photo-file/:id', async (req, res) => {
   if (!/^[a-f0-9]{32}$/.test(req.params.id)) {
     return res.status(404).send('Photo not found or expired.');
@@ -243,7 +300,15 @@ app.get('/photo-file/:id', async (req, res) => {
 
       res.set('Cache-Control', 'public, max-age=300');
       res.set('X-Content-Type-Options', 'nosniff');
-      res.type(ext === '.png' ? 'png' : ext === '.webp' ? 'webp' : 'jpg');
+
+      res.type(
+        ext === '.png'
+          ? 'png'
+          : ext === '.webp'
+            ? 'webp'
+            : 'jpg'
+      );
+
       return res.sendFile(file);
     } catch (_) {}
   }
@@ -251,9 +316,12 @@ app.get('/photo-file/:id', async (req, res) => {
   return res.status(404).send('Photo not found or expired.');
 });
 
+// Error handling
 app.use((err, _req, res, _next) => {
-  if (err instanceof multer.MulterError &&
-      err.code === 'LIMIT_FILE_SIZE') {
+  if (
+    err instanceof multer.MulterError &&
+    err.code === 'LIMIT_FILE_SIZE'
+  ) {
     return res.status(413).json({
       error: 'Image exceeds the 5 MB limit.'
     });
@@ -265,10 +333,11 @@ app.use((err, _req, res, _next) => {
     });
   }
 
-  return res.status(500).json({ error: 'Server error.' });
+  return res.status(500).json({
+    error: 'Server error.'
+  });
 });
 
 app.listen(PORT, () => {
   console.log(`Photo QR NEST SD backend listening on port ${PORT}`);
 });
-
