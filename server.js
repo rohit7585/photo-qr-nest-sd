@@ -55,7 +55,7 @@ app.get('/robots.txt', (_req, res) => {
     'X-Content-Type-Options': 'nosniff'
   });
 
-  res.type('text/plain').send(
+    res.type('text/plain').send(
     'User-agent: *\n' +
     'Allow: /\n' +
     'Allow: /sitemap.xml\n' +
