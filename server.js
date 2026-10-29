@@ -1,3 +1,4 @@
+```javascript
 'use strict';
 
 const express = require('express');
@@ -80,14 +81,101 @@ app.get('/sitemap.xml', (_req, res) => {
   );
 });
 
+// SEO homepage: metadata and structured data
+app.get('/', async (_req, res, next) => {
+  try {
+    let html = await fs.promises.readFile(
+      path.join(PUBLIC_DIR, 'index.html'),
+      'utf8'
+    );
+
+    const title =
+      'Free Photo QR Code Generator Online | Photo QR NEST SD';
+
+    const description =
+      'Create photo QR codes online for free with Photo QR NEST SD. Generate QR codes for photos, images, website URLs, Wi-Fi and contact details.';
+
+    // Update the existing title.
+    if (/<title>[\s\S]*?<\/title>/i.test(html)) {
+      html = html.replace(
+        /<title>[\s\S]*?<\/title>/i,
+        `<title>${title}</title>`
+      );
+    } else {
+      html = html.replace(
+        /<head[^>]*>/i,
+        `$&\n<title>${title}</title>`
+      );
+    }
+
+    // Update or add the description.
+    if (/<meta\s+name=["']description["'][^>]*>/i.test(html)) {
+      html = html.replace(
+        /<meta\s+name=["']description["'][^>]*>/i,
+        `<meta name="description" content="${description}">`
+      );
+    } else {
+      html = html.replace(
+        /<\/head>/i,
+        `<meta name="description" content="${description}">\n</head>`
+      );
+    }
+
+    // Avoid duplicate tags when the page is requested.
+    const seoTags = `
+<link rel="canonical" href="${SITE_URL}/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:url" content="${SITE_URL}/">
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${description}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="${title}">
+<meta name="twitter:description" content="${description}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Photo QR NEST SD",
+  "url": "${SITE_URL}/",
+  "description": "${description}",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Any",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "INR"
+  }
+}
+</script>`;
+
+    // Remove older copies of tags this route manages, then add one copy.
+    html = html
+      .replace(/<link\s+rel=["']canonical["'][^>]*>\s*/gi, '')
+      .replace(/<meta\s+name=["']robots["'][^>]*>\s*/gi, '')
+      .replace(/<meta\s+property=["']og:type["'][^>]*>\s*/gi, '')
+      .replace(/<meta\s+property=["']og:url["'][^>]*>\s*/gi, '')
+      .replace(/<meta\s+property=["']og:title["'][^>]*>\s*/gi, '')
+      .replace(/<meta\s+property=["']og:description["'][^>]*>\s*/gi, '')
+      .replace(/<meta\s+name=["']twitter:card["'][^>]*>\s*/gi, '')
+      .replace(/<meta\s+name=["']twitter:title["'][^>]*>\s*/gi, '')
+      .replace(/<meta\s+name=["']twitter:description["'][^>]*>\s*/gi, '')
+      .replace(/<script\s+type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>\s*/gi, '');
+
+    html = html.replace(/<\/head>/i, `${seoTags}\n</head>`);
+
+    res.set('Cache-Control', 'no-cache');
+    res.type('html').send(html);
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.use(express.static(PUBLIC_DIR, {
   etag: true,
-  maxAge: '1h'
+  maxAge: '1h',
+  index: false
 }));
-
-app.get('/', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
 
 app.use('/api/', rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -262,6 +350,7 @@ app.get('/photo/:id', async (req, res) => {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Photo QR NEST SD</title>
+<meta name="robots" content="noindex, follow">
 <style>
 *{box-sizing:border-box}
 body{margin:0;padding:12px;background:#f5f7fb;font-family:Arial,sans-serif;text-align:center}
@@ -341,3 +430,4 @@ app.use((err, _req, res, _next) => {
 app.listen(PORT, () => {
   console.log(`Photo QR NEST SD backend listening on port ${PORT}`);
 });
+```
