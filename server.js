@@ -60,7 +60,7 @@ app.get('/robots.txt', (_req, res) => {
     'Allow: /\n' +
     'Allow: /sitemap.xml\n' +
     'Disallow: /api/\n' +
-    'Disallow: /photo/\n' +
+    
     'Disallow: /photo-file/\n\n' +
     `Sitemap: ${SITE_URL}/sitemap.xml\n`
   );
