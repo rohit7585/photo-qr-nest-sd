@@ -89,11 +89,11 @@ app.get('/', async (_req, res, next) => {
       'utf8'
     );
 
-    const title =
-     'Photo QR Code Generator – Share Photos with QR | Photo QR NEST SD';
+        const title =
+      'Free Photo QR Code Generator Online | Photo QR NEST SD';
 
     const description =
-     'Create a QR code for your photo online for free. Upload a JPG, PNG or WebP image, share it with a scannable QR code, and access it for up to 24 hours.';
+      'Create free photo QR codes, photo gallery QR codes, text QR codes, website URL QR codes, Wi-Fi QR codes and contact QR codes online with Photo QR NEST SD.';
 
     // Update the existing title.
     if (/<title>[\s\S]*?<\/title>/i.test(html)) {
