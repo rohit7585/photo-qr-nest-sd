@@ -163,7 +163,29 @@ app.get('/', async (_req, res, next) => {
       .replace(/<script\s+type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>\s*/gi, '');
 
     html = html.replace(/<\/head>/i, `${seoTags}\n</head>`);
+    const keywordSection = `
+<section class="section" aria-labelledby="qr-keyword-content">
+  <div class="box" style="line-height:1.65">
+    <h2 id="qr-keyword-content">Free QR Code Generator Online for Photos, Text and More</h2>
+    <p>Photo QR NEST SD is a free photo QR code generator, free QR code generator, online QR code maker and online QR code generator.</p>
 
+    <h3>Photo to QR Code, Image to QR Code and Photo Gallery QR Code</h3>
+    <p>Use Photo QR to create a photo to QR code or image to QR code. Upload one photo per QR. To share multiple photos with one QR code, use a public photo gallery URL.</p>
+
+    <h3>Text to QR Code and Website URL QR</h3>
+    <p>Use Text QR to create a text to QR code. Use Website Link QR to convert a website URL to QR and create a website URL QR code.</p>
+
+    <h3>Wi-Fi QR Code Generator, Phone Number QR, Email QR and Contact QR</h3>
+    <p>Create Wi-Fi QR codes, Phone Number QR, Email QR and Contact QR codes easily with Photo QR NEST SD.</p>
+  </div>
+</section>`;
+
+    if (!html.includes('id="qr-keyword-content"')) {
+      html = html.replace(
+        /<section class=["']promo-banner["']/i,
+        `${keywordSection}\n<section class="promo-banner"`
+      );
+    }
     res.set('Cache-Control', 'no-cache');
     res.type('html').send(html);
   } catch (err) {
