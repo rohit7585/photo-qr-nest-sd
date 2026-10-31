@@ -56,8 +56,16 @@ app.get('/robots.txt', (_req, res) => {
   });
 
     res.type('text/plain').send(
-    'User-agent: *\n' +
+          'User-agent: Google-InspectionTool\n' +
     'Allow: /\n' +
+    'Disallow: /api/\n' +
+    'Disallow: /photo-file/\n\n' +
+
+    'User-agent: Googlebot\n' +
+    'Allow: /\n' +
+    'Disallow: /api/\n' +
+    'Disallow: /photo-file/\n\n' +
+        'User-agent: *\n' +'Allow: /\n' +
     'Allow: /sitemap.xml\n' +
     'Disallow: /api/\n' +
     
