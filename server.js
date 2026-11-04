@@ -46,32 +46,25 @@ app.use(helmet({
   }
 }));
 
-// Robots.txt
-app.get('/robots.txt', (_req, res) => {
-  res.set({
-    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0',
-    'X-Content-Type-Options': 'nosniff'
-  });
+// Robots.txt: serve the repository file as the single source of truth.
+app.get('/robots.txt', async (_req, res, next) => {
+  try {
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'X-Content-Type-Options': 'nosniff'
+    });
 
-    res.type('text/plain').send(
-          'User-agent: Google-InspectionTool\n' +
-    'Allow: /\n' +
-    'Disallow: /api/\n' +
-    'Disallow: /photo-file/\n\n' +
+    const robots = await fs.promises.readFile(
+      path.join(PUBLIC_DIR, 'robots.txt'),
+      'utf8'
+    );
 
-    'User-agent: Googlebot\n' +
-    'Allow: /\n' +
-    'Disallow: /api/\n' +
-    'Disallow: /photo-file/\n\n' +
-        'User-agent: *\n' +'Allow: /\n' +
-    'Allow: /sitemap.xml\n' +
-    'Disallow: /api/\n' +
-    
-    'Disallow: /photo-file/\n\n' +
-    `Sitemap: ${SITE_URL}/sitemap.xml\n`
-  );
+    res.type('text/plain').send(robots);
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Sitemap XML
