@@ -46,25 +46,37 @@ app.use(helmet({
   }
 }));
 
-// Robots.txt: serve the repository file as the single source of truth.
-app.get('/robots.txt', async (_req, res, next) => {
-  try {
-    res.set({
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'X-Content-Type-Options': 'nosniff'
-    });
+const ROBOTS_TXT = [
+  'User-agent: Googlebot',
+  'Allow: /',
+  'Disallow: /api/',
+  'Disallow: /photo/',
+  'Disallow: /photo-file/',
+  '',
+  'User-agent: Google-InspectionTool',
+  'Allow: /',
+  'Disallow: /api/',
+  'Disallow: /photo/',
+  'Disallow: /photo-file/',
+  '',
+  'User-agent: *',
+  'Allow: /',
+  'Allow: /sitemap.xml',
+  'Disallow: /api/',
+  'Disallow: /photo/',
+  'Disallow: /photo-file/',
+  '',
+  'Sitemap: https://photo-qr-nest-sd.onrender.com/sitemap.xml',
+].join('\n');
 
-    const robots = await fs.promises.readFile(
-      path.join(PUBLIC_DIR, 'robots.txt'),
-      'utf8'
-    );
-
-    res.type('text/plain').send(robots);
-  } catch (err) {
-    next(err);
-  }
+app.get('/robots.txt', (_req, res) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'X-Content-Type-Options': 'nosniff'
+  });
+  res.type('text/plain').send(ROBOTS_TXT);
 });
 
 // Sitemap XML
